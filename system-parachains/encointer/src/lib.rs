@@ -342,60 +342,6 @@ impl pallet_transaction_payment::Config for Runtime {
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
-pub const ENCOINTER_TREASURY_PALLET_ID: u8 = 43;
-
-parameter_types! {
-	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 100 * MILLICENTS;
-	pub const ProposalBondMaximum: Balance = 500 * CENTS;
-	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	pub const Burn: Permill = Permill::from_percent(1);
-	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
-	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
-	// The asset's interior location for the paying account. This is the Treasury
-	// pallet instance (which sits at index 18).
-	pub TreasuryInteriorLocation: InteriorMultiLocation = PalletInstance(ENCOINTER_TREASURY_PALLET_ID).into();
-	pub const MaxApprovals: u32 = 10;
-	pub TreasuryAccount: AccountId = Treasury::account_id();
-}
-
-pub struct NoConversion;
-impl ConversionFromAssetBalance<u128, (), u128> for NoConversion {
-	type Error = ();
-	fn from_asset_balance(balance: Balance, _asset_id: ()) -> Result<Balance, Self::Error> {
-		return Ok(balance)
-	}
-	#[cfg(feature = "runtime-benchmarks")]
-	fn ensure_successful(_: ()) {}
-}
-
-impl pallet_treasury::Config for Runtime {
-	type PalletId = TreasuryPalletId;
-	type Currency = pallet_balances::Pallet<Runtime>;
-	type ApproveOrigin = MoreThanHalfCouncil;
-	type RejectOrigin = MoreThanHalfCouncil;
-	type RuntimeEvent = RuntimeEvent;
-	type OnSlash = (); //No proposal
-	type ProposalBond = ProposalBond;
-	type ProposalBondMinimum = ProposalBondMinimum;
-	type ProposalBondMaximum = ProposalBondMaximum;
-	type SpendPeriod = SpendPeriod; //Cannot be 0: Error: Thread 'tokio-runtime-worker' panicked at 'attempt to calculate the
-								// remainder with a divisor of zero
-	type Burn = (); //No burn
-	type BurnDestination = (); //No burn
-	type SpendFunds = (); //No spend, no bounty
-	type MaxApprovals = MaxApprovals;
-	type WeightInfo = weights::pallet_treasury::WeightInfo<Runtime>;
-	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; //No spend, no bounty
-	type AssetKind = ();
-	type Beneficiary = AccountId;
-	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
-	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
-	type BalanceConverter = NoConversion;
-	type PayoutPeriod = PayoutSpendPeriod;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
-}
 
 impl pallet_utility::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -647,7 +593,6 @@ construct_runtime! {
 
 		// Handy utilities.
 		Utility: pallet_utility = 40,
-		Treasury: pallet_treasury = 43,
 		Proxy: pallet_proxy = 44,
 		Scheduler: pallet_scheduler = 48,
 
@@ -726,8 +671,6 @@ mod benches {
 		[pallet_collective, Collective]
 		[pallet_membership, Membership]
 		[pallet_timestamp, Timestamp]
-		// todo: treasury will be removed in separate PR, so no need to fix broken benchmarks: https://github.com/polkadot-fellows/runtimes/issues/176
-		//[pallet_treasury, Treasury]
 		[pallet_utility, Utility]
 		[pallet_proxy, Proxy]
 		[pallet_encointer_balances, EncointerBalances]
